@@ -6,8 +6,7 @@
 '''
 import pandas as pd
 import numpy as np
-
-
+from sklearn.preprocessing import LabelEncoder
 
 
 class Data_Preparation:
@@ -21,12 +20,30 @@ class Data_Preparation:
         # print(self.ad_train.columns)
         self.click_log_train = pd.read_csv("train_preliminary/click_log.sample.csv")
         # print(self.click_log_train.columns)
+        self.df_train = self.data_process()
 
     def data_process(self):
         df_train = self.user_train.join(self.click_log_train.set_index('user_id'), on='user_id', how='inner')
         df_train = df_train.join(self.ad_train.set_index('creative_id'), on='creative_id', how='inner')
         print(df_train.head(5))
         print(df_train.dtypes)
+        # Numerical Coding:
+        le = LabelEncoder()
+        var_to_encode = ['product_id', 'industry']
+        for col in var_to_encode:
+            df_train[col] = le.fit_transform(df_train[col])
+        # One-Hot Coding
+        df_train = pd.get_dummies(df_train, columns=var_to_encode)
+        for idx in df_train.columns:
+            print(idx, ", ")
+        # print(df_train.columns)
+        df_train.to_csv('train_modified.csv', index=False)
+        return df_train
+
+    def train(self):
+        target = 'Disbursed'
+        IDcol = 'ID'
+
 
 if __name__ == '__main__':
     dp = Data_Preparation()
