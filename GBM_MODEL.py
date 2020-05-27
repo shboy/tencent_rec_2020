@@ -55,6 +55,7 @@ class GBM_MODEL:
             feat_imp = feat_imp[feat_imp>0].sort_values(ascending=False)
             feat_imp.plot(kind='bar', title='Feature Importances')
             plt.ylabel('Feature Importance Score')
+            plt.savefig("./FeatureImportance.png")
             plt.show()
 
 
