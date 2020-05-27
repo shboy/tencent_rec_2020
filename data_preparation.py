@@ -33,6 +33,13 @@ class Data_Preparation:
                 label += 1
         return label_dict
 
+    def add_tf_idf(self):
+        pass
+
+    # 用户行为建模, 暂时准备用rnn+crf建模
+    def add_user_action_feats(self):
+        pass
+
     def data_process(self):
         df_train = self.user_train.join(self.click_log_train.set_index('user_id'), on='user_id', how='inner')
         df_train = df_train.join(self.ad_train.set_index('creative_id'), on='creative_id', how='inner')
