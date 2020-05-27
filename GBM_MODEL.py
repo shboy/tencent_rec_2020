@@ -34,15 +34,15 @@ class GBM_MODEL:
 
         # Perform cross-validation:
         if performCV:
-            cv_score = cross_validation.cross_val_score(alg, dtrain[predictors], dtrain['label'], cv=cv_folds,
-                                                        scoring='roc_auc')
+            cv_score = cross_validation.cross_val_score(alg, dtrain[predictors], dtrain['label'], cv=cv_folds)
+                                                        # ,scoring='roc_auc')
 
         # Print model report:
         print("\nModel Report")
 
         print("Accuracy : %.4g" % metrics.accuracy_score(dtrain['label'].values, dtrain_predictions))
 
-        print("AUC Score (Train): %f" % metrics.roc_auc_score(dtrain['label'], dtrain_predprob))
+        # print("AUC Score (Train): %f" % metrics.roc_auc_score(dtrain['label'], dtrain_predprob))
 
 
         if performCV:
@@ -51,9 +51,11 @@ class GBM_MODEL:
 
         # Print Feature Importance:
         if printFeatureImportance:
-            feat_imp = pd.Series(alg.feature_importances_, predictors).sort_values(ascending=False)
+            feat_imp = pd.Series(alg.feature_importances_, predictors)
+            feat_imp = feat_imp[feat_imp>0].sort_values(ascending=False)
             feat_imp.plot(kind='bar', title='Feature Importances')
             plt.ylabel('Feature Importance Score')
+            plt.show()
 
 
     def train(self):
@@ -66,7 +68,7 @@ class GBM_MODEL:
         # https://zhuanlan.zhihu.com/p/91652813?utm_source=wechat_session
         # https://www.2cto.com/kf/201802/717234.html
         # https://www.jianshu.com/p/516f009c0875
-        self.modelfit(gbm0, self.train_data, self.train_data, predictors)
+        self.modelfit(gbm0, self.train_data[:100], self.train_data, predictors)
 
 if __name__ == '__main__':
     gm = GBM_MODEL()
