@@ -7,8 +7,11 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
+import pickle
 
 FIELD_SEP = '_'
+UNKNOWN = 'UNKNOWN'
+LABELENCODER_FILENAME = "GBM/model/label_encoder.pkl"
 
 class Data_Preparation:
     # user: Index(['user_id', 'age', 'gender'], dtype='object'),
@@ -46,20 +49,24 @@ class Data_Preparation:
         df_train = df_train.join(self.ad_train.set_index('creative_id'), on='creative_id', how='inner')
         print(df_train.head(5))
         print(df_train.dtypes)
+        # 合并age、 gender
         df_train['label'] = (df_train['age'].map(str) + FIELD_SEP + df_train['gender'].map(str)).map(self.label_dict.get)
         df_train.drop(['age', 'gender'], axis=1, inplace=True)
         print("label:\t", df_train['label'].values)
-        # 合并age、 gender
         # Numerical Coding:
         le = LabelEncoder()
         var_to_encode = ['product_id', 'industry']
         for col in var_to_encode:
-            df_train[col] = le.fit_transform(df_train[col])
+            df_train[col] = le.fit_transform(df_train[col].append(pd.Series([UNKNOWN])))
+
+        # 保存pickle模型
+        with open(LABELENCODER_FILENAME, 'wb') as f_pkl:
+            pickle.dump(le, f_pkl)
+
         # One-Hot Coding
         df_train = pd.get_dummies(df_train, columns=var_to_encode)
         for idx in df_train.columns:
             print(idx, end=", ")
-        print()
         # print(df_train.columns)
         df_train.to_csv('train_modified.csv', index=False)
         return df_train
