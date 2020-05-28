@@ -69,7 +69,7 @@ class GBM_MODEL:
         # https://zhuanlan.zhihu.com/p/91652813?utm_source=wechat_session
         # https://www.2cto.com/kf/201802/717234.html
         # https://www.jianshu.com/p/516f009c0875
-        self.modelfit(gbm0, self.train_data[:100], self.train_data, predictors)
+        self.modelfit(gbm0, self.train_data, self.train_data, predictors)
 
 if __name__ == '__main__':
     gm = GBM_MODEL()
