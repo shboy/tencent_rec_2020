@@ -53,11 +53,11 @@ class Data_Preparation:
         df_train['label'] = (df_train['age'].map(str) + FIELD_SEP + df_train['gender'].map(str)).map(self.label_dict.get)
         df_train.drop(['age', 'gender'], axis=1, inplace=True)
         print("label:\t", df_train['label'].values)
+        var_to_encode = ['product_id', 'industry']
         # Numerical Coding:
         le = LabelEncoder()
-        var_to_encode = ['product_id', 'industry']
         for col in var_to_encode:
-            df_train[col] = le.fit_transform(df_train[col].append(pd.Series([UNKNOWN])))
+            df_train[col] = le.fit_transform(df_train[col])
 
         # 保存pickle模型
         with open(LABELENCODER_FILENAME, 'wb') as f_pkl:
@@ -70,6 +70,8 @@ class Data_Preparation:
         # print(df_train.columns)
         df_train.to_csv('train_modified.csv', index=False)
         return df_train
+
+
 
 
 if __name__ == '__main__':
