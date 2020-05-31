@@ -89,7 +89,10 @@ class Data_Preparation:
         gc.collect()
 
         # 合并age、 gender
+        print("生成label开始")
         df_train['label'] = (df_train['age'].map(str) + FIELD_SEP + df_train['gender'].map(str)).map(self.label_dict.get)
+        print("生成label完成")
+
         df_train.drop(['age', 'gender'], axis=1, inplace=True)
         print("label:\t", df_train['label'].values)
         var_to_encode = ['product_id', 'industry']
