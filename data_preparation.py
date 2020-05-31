@@ -95,7 +95,8 @@ class Data_Preparation:
         # 合并age、 gender
         print("生成label开始")
         # df_train['label'] = (df_train['age'].map(str) + FIELD_SEP + df_train['gender'].map(str)).map(self.label_dict.get)
-        df_train['label'] = df_train['age'].apply(str) + FIELD_SEP + df_train['gender'].apply(str)
+        df_train['FILED_SEP'] = FIELD_SEP
+        df_train['label'] = df_train['age'].apply(str) + df_train['FILED_SEP'] + df_train['gender'].apply(str)
         print("step 1")
         df_train.drop(['age', 'gender'], axis=1, inplace=True)
         print("step2")
