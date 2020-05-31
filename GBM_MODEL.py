@@ -24,6 +24,8 @@ rcParams['figure.figsize'] = 12, 4
 
 MODEL_FILENAME = "GBM/model/GBM.pb"
 
+import os
+os.mkdir("submission")
 class GBM_MODEL:
     def __init__(self):
         # self.user_train = "train_preliminary/user.sample.csv"

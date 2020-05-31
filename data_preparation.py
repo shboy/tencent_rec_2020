@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 import pickle
+import gc
 
 FIELD_SEP = '_'
 UNKNOWN = 'UNKNOWN'
@@ -84,6 +85,9 @@ class Data_Preparation:
 
         print(df_train.head(5))
         print(df_train.dtypes)
+
+        gc.collect()
+
         # 合并age、 gender
         df_train['label'] = (df_train['age'].map(str) + FIELD_SEP + df_train['gender'].map(str)).map(self.label_dict.get)
         df_train.drop(['age', 'gender'], axis=1, inplace=True)
@@ -102,14 +106,15 @@ class Data_Preparation:
             pickle.dump(le, f_le_pkl)
             # pickle.dump(oe, f_oe_pkl)
 
+        print("label encoder 模型保存成功")
+
         # One-Hot Coding
         # df_train = pd.get_dummies(df_train, columns=var_to_encode)
 
         # print(df_train.columns)
         df_train_sample = self.user_train_sample.join(self.click_log_train_sample.set_index('user_id'), on='user_id', how='inner')
         df_train_sample = df_train_sample.join(self.ad_train_sample.set_index('creative_id'), on='creative_id', how='inner')
-        df_train_sample['label'] = (df_train_sample['age'].map(str) + FIELD_SEP + df_train_sample['gender'].map(str)).map(
-            self.label_dict.get)
+        df_train_sample['label'] = (df_train_sample['age'].map(str) + FIELD_SEP + df_train_sample['gender'].map(str)).map(self.label_dict.get)
         df_train_sample.drop(['age', 'gender'], axis=1, inplace=True)
         print("label:\t", df_train_sample['label'].values)
         var_to_encode = ['product_id', 'industry']
@@ -119,8 +124,11 @@ class Data_Preparation:
             df_train_sample[col] = le.transform(df_train_sample[col])
 
         df_train_sample = pd.get_dummies(df_train_sample, columns=var_to_encode)
-        
+
+        print("保存df_train_sample开始")
         df_train_sample.to_csv('train_modified.csv', index=False)
+        print("保存df_train_sample完成")
+
         for idx in df_train.columns:
             print(idx, end=", ")
         return df_train
