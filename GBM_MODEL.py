@@ -18,7 +18,7 @@ import argparse
 import matplotlib.pylab as plt
 from matplotlib.pylab import rcParams
 
-from data_preparation import LABELENCODER_FILENAME, Data_Preparation, getAgeAndGenderFromLabelDict
+from data_preparation import LABEL_ENCODER_FILENAME, Data_Preparation, getAgeAndGenderFromLabelDict
 
 rcParams['figure.figsize'] = 12, 4
 

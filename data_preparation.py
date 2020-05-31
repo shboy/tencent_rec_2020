@@ -6,12 +6,16 @@
 '''
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 import pickle
 
 FIELD_SEP = '_'
 UNKNOWN = 'UNKNOWN'
-LABELENCODER_FILENAME = "GBM/model/label_encoder.pkl"
+LABEL_ENCODER_FILENAME = "GBM/model/label_encoder.pkl"
+ONE_HOT_ENCODER_FILENAME = "GBM/model/one_hot_encoder.okl"
+USER_TRAIN_CSV_PATH = "train_preliminary/user.csv"
+AD_TRAIN_CSV_PATH = "train_preliminary/ad.csv"
+CLICK_LOG_TRAIN_CSV_PATH = "train_preliminary/click_log.csv"
 
 
 def getAgeAndGenderFromLabelDict(self, label: str):
@@ -24,11 +28,11 @@ class Data_Preparation:
     # ad: Index(['creative_id', 'ad_id', 'product_id', 'product_category', 'advertiser_id', 'industry'], dtype='object'),
     # context: Index(['time', 'user_id', 'creative_id', 'click_times'], dtype='object'))
     def __init__(self):
-        self.user_train = pd.read_csv("train_preliminary/user.sample.csv")
+        self.user_train = pd.read_csv(USER_TRAIN_CSV_PATH)
         # print(self.user_train.columns)
-        self.ad_train = pd.read_csv("train_preliminary/ad.sample.csv")
+        self.ad_train = pd.read_csv(AD_TRAIN_CSV_PATH)
         # print(self.ad_train.columns)
-        self.click_log_train = pd.read_csv("train_preliminary/click_log.sample.csv")
+        self.click_log_train = pd.read_csv(CLICK_LOG_TRAIN_CSV_PATH)
         # print(self.click_log_train.columns)
         self.label_dict = self.gen_label_dict()
         # self.df_train = self.data_process()
@@ -63,15 +67,19 @@ class Data_Preparation:
         var_to_encode = ['product_id', 'industry']
         # Numerical Coding:
         le = LabelEncoder()
+        oe = OneHotEncoder(sparse=False)
         for col in var_to_encode:
             df_train[col] = le.fit_transform(df_train[col])
+            df_train[col] = oe.fit_transform(df_train[col].values.reshape(-1, 1))
+
 
         # 保存pickle模型
-        with open(LABELENCODER_FILENAME, 'wb') as f_pkl:
-            pickle.dump(le, f_pkl)
+        with open(LABEL_ENCODER_FILENAME, 'wb') as f_le_pkl, open(ONE_HOT_ENCODER_FILENAME, 'wb') as f_oe_pkl:
+            pickle.dump(le, f_le_pkl)
+            pickle.dump(oe, f_oe_pkl)
 
         # One-Hot Coding
-        df_train = pd.get_dummies(df_train, columns=var_to_encode)
+        # df_train = pd.get_dummies(df_train, columns=var_to_encode)
         for idx in df_train.columns:
             print(idx, end=", ")
         # print(df_train.columns)
@@ -88,14 +96,16 @@ class Data_Preparation:
         var_to_encode = ['product_id', 'industry']
         # Numerical Coding:
         # 恢复encoder的pickle模型
-        with open(LABELENCODER_FILENAME, 'rb') as f_pkl:
-            le = pickle.load(f_pkl)
+        with open(LABEL_ENCODER_FILENAME, 'rb') as f_le_pkl, open(ONE_HOT_ENCODER_FILENAME, 'rb') as f_oe_pkl:
+            le = pickle.load(f_le_pkl)
+            oe = pickle.load(f_oe_pkl)
         print("encoder 恢复完成")
         for col in var_to_encode:
             df_test[col] = le.transform(df_test[col])
+            df_test[col] = oe.transform(df_test[col].values.reshape(-1, 1))
 
         # One-Hot Coding
-        df_test = pd.get_dummies(df_test, columns=var_to_encode)
+        # df_test = pd.get_dummies(df_test, columns=var_to_encode)
         print("特征转化完成")
         df_test.to_csv("test_modified.csv", index=False)
 
