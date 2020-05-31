@@ -121,6 +121,8 @@ class Data_Preparation:
         del df_train
         del df_test
 
+        gc.collect()
+
         self.user_train_sample = pd.read_csv(USER_TRAIN_SAMPLE_CSV_PATH)
         self.ad_train_sample = pd.read_csv(AD_TRAIN_SAMPLE_CSV_PATH)
         self.click_log_train_sample = pd.read_csv(CLICK_LOG_TRAIN_SAMPLE_CSV_PATH)
