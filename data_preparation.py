@@ -36,14 +36,18 @@ class Data_Preparation:
     # ad: Index(['creative_id', 'ad_id', 'product_id', 'product_category', 'advertiser_id', 'industry'], dtype='object'),
     # context: Index(['time', 'user_id', 'creative_id', 'click_times'], dtype='object'))
     def __init__(self):
-        self.user_train = pd.read_csv(USER_TRAIN_CSV_PATH)
-        # print(self.user_train.columns)
-        self.ad_train = pd.read_csv(AD_TRAIN_CSV_PATH)
-        # print(self.ad_train.columns)
-        self.click_log_train = pd.read_csv(CLICK_LOG_TRAIN_CSV_PATH)
+        # self.user_train = pd.read_csv(USER_TRAIN_CSV_PATH)
+        # # print(self.user_train.columns)
+        # self.ad_train = pd.read_csv(AD_TRAIN_CSV_PATH)
+        # # print(self.ad_train.columns)
+        # self.click_log_train = pd.read_csv(CLICK_LOG_TRAIN_CSV_PATH)
         # print(self.click_log_train.columns)
         self.label_dict = self.gen_label_dict()
         # self.df_train = self.data_process()
+
+        self.user_train_sample = pd.read_csv(USER_TRAIN_SAMPLE_CSV_PATH)
+        self.ad_train_sample = pd.read_csv(AD_TRAIN_SAMPLE_CSV_PATH)
+        self.click_log_train_sample = pd.read_csv(CLICK_LOG_TRAIN_SAMPLE_CSV_PATH)
 
 
         self.ad_test_sample = pd.read_csv(AD_TEST_SAMPLE_CSV_PATH)
@@ -68,86 +72,52 @@ class Data_Preparation:
         pass
 
     def data_process(self):
-        df_train = self.user_train.join(self.click_log_train.set_index('user_id'), on='user_id', how='inner')
-        df_train = df_train.join(self.ad_train.set_index('creative_id'), on='creative_id', how='inner')
+        df_train_sample = self.user_train_sample.join(self.click_log_train_sample.set_index('user_id'), on='user_id', how='inner')
+        df_train_sample = df_train_sample.join(self.ad_train_sample.set_index('creative_id'), on='creative_id', how='inner')
 
-        del self.user_train
-        del self.click_log_train
-        del self.ad_train
+        del self.user_train_sample
+        del self.click_log_train_sample
+        del self.ad_train_sample
+        gc.collect()
 
-        print("df_train before concat shape:\t", df_train.shape)
+        print("df_train_sample before concat shape:\t", df_train_sample.shape)
 
         df_test = self.ad_test_sample.merge(self.click_log_test_sample, left_on='creative_id', right_on='creative_id')
         print("df test before concat shape:\t", df_test.shape)
 
+        del df_test
         del self.ad_test_sample
         del self.click_log_test_sample
-
-        df_train = pd.concat([df_train, df_test], ignore_index=True)
-        print("df all shape:\t", df_train.shape)
-
-
-        print(df_train.head(5))
-        print(df_train.dtypes)
-
         gc.collect()
+
+        df_train_sample = pd.concat([df_train_sample, df_test], ignore_index=True)
+        print("df all shape:\t", df_train_sample.shape)
+
+        print(df_train_sample.head(5))
+        print(df_train_sample.dtypes)
+
 
         # 合并age、 gender
         print("生成label开始")
-        # df_train['label'] = (df_train['age'].map(str) + FIELD_SEP + df_train['gender'].map(str)).map(self.label_dict.get)
-        df_train['FILED_SEP'] = FIELD_SEP
-        df_train['label'] = df_train['age'].apply(str) + df_train['FILED_SEP'] + df_train['gender'].apply(str)
+        # df_train_sample['label'] = (df_train_sample['age'].map(str) + FIELD_SEP + df_train_sample['gender'].map(str)).map(self.label_dict.get)
+        df_train_sample['label'] = df_train_sample['age'].apply(str) + FIELD_SEP + df_train_sample['gender'].apply(str)
         print("step 1")
-        df_train.drop(['age', 'gender'], axis=1, inplace=True)
+        df_train_sample.drop(['age', 'gender'], axis=1, inplace=True)
         print("step2")
-
         gc.collect()
         print("step3")
-        df_train['label'] = df_train['label'].apply(self.label_dict.get)
-
-
+        df_train_sample['label'] = df_train_sample['label'].apply(self.label_dict.get)
         print("生成label完成")
 
-        print("label:\t", df_train['label'].values)
+        print("label:\t", df_train_sample['label'].values)
         var_to_encode = ['product_id', 'industry']
         # Numerical Coding:
         le = LabelEncoder()
         # oe = OneHotEncoder(sparse=False)
         for col in var_to_encode:
-            df_train[col] = le.fit_transform(df_train[col])
-            # df_train[col] = oe.fit(df_train[col].unique().reshape(-1, 1))
-
-
-        # 保存pickle模型
-        with open(LABEL_ENCODER_FILENAME, 'wb') as f_le_pkl, open(ONE_HOT_ENCODER_FILENAME, 'wb') as f_oe_pkl:
-            pickle.dump(le, f_le_pkl)
-            # pickle.dump(oe, f_oe_pkl)
-
-        print("label encoder 模型保存成功")
-
-        # One-Hot Coding
-        # df_train = pd.get_dummies(df_train, columns=var_to_encode)
-
-        del df_train
-        del df_test
-
-        gc.collect()
-
-        self.user_train_sample = pd.read_csv(USER_TRAIN_SAMPLE_CSV_PATH)
-        self.ad_train_sample = pd.read_csv(AD_TRAIN_SAMPLE_CSV_PATH)
-        self.click_log_train_sample = pd.read_csv(CLICK_LOG_TRAIN_SAMPLE_CSV_PATH)
-
-        # print(df_train.columns)
-        df_train_sample = self.user_train_sample.join(self.click_log_train_sample.set_index('user_id'), on='user_id', how='inner')
-        df_train_sample = df_train_sample.join(self.ad_train_sample.set_index('creative_id'), on='creative_id', how='inner')
-        df_train_sample['label'] = (df_train_sample['age'].map(str) + FIELD_SEP + df_train_sample['gender'].map(str)).map(self.label_dict.get)
-        df_train_sample.drop(['age', 'gender'], axis=1, inplace=True)
-        print("label:\t", df_train_sample['label'].values)
-        var_to_encode = ['product_id', 'industry']
-        # Numerical Coding:
-        # oe = OneHotEncoder(sparse=False)
-        for col in var_to_encode:
-            df_train_sample[col] = le.transform(df_train_sample[col])
+            df_train_sample[col] = le.fit_transform(df_train_sample[col])
+            # df_train_sample[col] = oe.fit(df_train_sample[col].unique().reshape(-1, 1))
+        print(df_train_sample.columns)
 
         df_train_sample = pd.get_dummies(df_train_sample, columns=var_to_encode)
 
@@ -155,14 +125,22 @@ class Data_Preparation:
         df_train_sample.to_csv('train_modified.csv', index=False)
         print("保存df_train_sample完成")
 
-        for idx in df_train.columns:
+        for idx in df_train_sample.columns:
             print(idx, end=", ")
-        return df_train
+
+        # 保存pickle模型
+        with open(LABEL_ENCODER_FILENAME, 'wb') as f_le_pkl, open(ONE_HOT_ENCODER_FILENAME, 'wb') as f_oe_pkl:
+            pickle.dump(le, f_le_pkl)
+            # pickle.dump(oe, f_oe_pkl)
+        print("label encoder 模型保存成功")
+
+        return df_train_sample
+
 
     def test_data_process(self):
         print("开始读取数据")
-        df_ad_test = pd.read_csv("train_preliminary/test/ad.csv")
-        df_click_log_test = pd.read_csv("train_preliminary/test/click_log.csv")
+        df_ad_test = pd.read_csv(AD_TEST_SAMPLE_CSV_PATH)
+        df_click_log_test = pd.read_csv(CLICK_LOG_TEST_SAMPLE_CSV_PATH)
         df_test = df_click_log_test.merge(df_ad_test, left_on='creative_id',right_on='creative_id')
         print("merge finished")
 
@@ -181,11 +159,7 @@ class Data_Preparation:
         df_test = pd.get_dummies(df_test, columns=var_to_encode)
         print("特征转化完成")
         df_test.to_csv("test_modified.csv", index=False)
-
         return df_test
-
-
-
 
 
 if __name__ == '__main__':
