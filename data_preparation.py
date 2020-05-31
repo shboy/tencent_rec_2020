@@ -73,9 +73,13 @@ class Data_Preparation:
         df_train = self.user_train.join(self.click_log_train.set_index('user_id'), on='user_id', how='inner')
         df_train = df_train.join(self.ad_train.set_index('creative_id'), on='creative_id', how='inner')
 
-        df_test = self.ad_test_sample.merge(self.click_log_test_sample, left_on='creative_id', right_on='creative_id')
+        print("df_train before concat shape:\t", df_train.shape)
 
-        df_train = pd.concat([df_train, df_test])
+        df_test = self.ad_test_sample.merge(self.click_log_test_sample, left_on='creative_id', right_on='creative_id')
+        print("df test before concat shape:\t", df_test.shape)
+
+        df_train = pd.concat([df_train, df_test], ignore_index=True)
+        print("df all shape:\t", df_train.shape)
 
 
         print(df_train.head(5))
@@ -110,10 +114,9 @@ class Data_Preparation:
         print("label:\t", df_train_sample['label'].values)
         var_to_encode = ['product_id', 'industry']
         # Numerical Coding:
-        le = LabelEncoder()
         # oe = OneHotEncoder(sparse=False)
         for col in var_to_encode:
-            df_train_sample[col] = le.fit_transform(df_train_sample[col])
+            df_train_sample[col] = le.transform(df_train_sample[col])
 
         df_train_sample = pd.get_dummies(df_train_sample, columns=var_to_encode)
         
