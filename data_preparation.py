@@ -13,6 +13,12 @@ FIELD_SEP = '_'
 UNKNOWN = 'UNKNOWN'
 LABELENCODER_FILENAME = "GBM/model/label_encoder.pkl"
 
+
+def getAgeAndGenderFromLabelDict(self, label: str):
+    _ = label.split(FIELD_SEP)
+    return int(_[-1], int(_[1]))
+
+
 class Data_Preparation:
     # user: Index(['user_id', 'age', 'gender'], dtype='object'),
     # ad: Index(['creative_id', 'ad_id', 'product_id', 'product_category', 'advertiser_id', 'industry'], dtype='object'),
@@ -36,8 +42,9 @@ class Data_Preparation:
                 label += 1
         return label_dict
 
-    def add_tf_idf(self):
 
+
+    def add_tf_idf(self):
         pass
 
     # 用户行为建模, 暂时准备用rnn+crf建模
@@ -70,6 +77,30 @@ class Data_Preparation:
         # print(df_train.columns)
         df_train.to_csv('train_modified.csv', index=False)
         return df_train
+
+    def test_data_process(self):
+        print("开始读取数据")
+        df_ad_test = pd.read_csv("train_preliminary/test/ad.csv")
+        df_click_log_test = pd.read_csv("train_preliminary/test/click_log.csv")
+        df_test = df_click_log_test.merge(df_ad_test, left_on='creative_id',right_on='creative_id')
+        print("merge finished")
+
+        var_to_encode = ['product_id', 'industry']
+        # Numerical Coding:
+        # 恢复encoder的pickle模型
+        with open(LABELENCODER_FILENAME, 'rb') as f_pkl:
+            le = pickle.load(f_pkl)
+        print("encoder 恢复完成")
+        for col in var_to_encode:
+            df_test[col] = le.transform(df_test[col])
+
+        # One-Hot Coding
+        df_test = pd.get_dummies(df_test, columns=var_to_encode)
+        print("特征转化完成")
+        df_test.to_csv("test_modified.csv", index=False)
+
+        return df_test
+
 
 
 

@@ -12,10 +12,17 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn import cross_validation, metrics
 from sklearn.grid_search import GridSearchCV
+import pickle
+import argparse
 
 import matplotlib.pylab as plt
 from matplotlib.pylab import rcParams
+
+from data_preparation import LABELENCODER_FILENAME, Data_Preparation, getAgeAndGenderFromLabelDict
+
 rcParams['figure.figsize'] = 12, 4
+
+MODEL_FILENAME = "GBM/model/GBM.pb"
 
 class GBM_MODEL:
     def __init__(self):
@@ -23,6 +30,7 @@ class GBM_MODEL:
         # self.ad_train = "train_preliminary/ad.sample.csv"
         # self.click_log_train = "train_preliminary/click_log.sample.csv"
         self.train_data = pd.read_csv("train_modified.csv")
+        # self.test_data = pd.read_csv()
 
     def modelfit(self, alg, dtrain, dtest, predictors, performCV=True, printFeatureImportance=True, cv_folds=5):
         # Fit the algorithm on the data
@@ -34,8 +42,8 @@ class GBM_MODEL:
 
         # Perform cross-validation:
         if performCV:
-            cv_score = cross_validation.cross_val_score(alg, dtrain[predictors], dtrain['label'], cv=cv_folds)
-                                                        # ,scoring='roc_auc')
+            cv_score = cross_validation.cross_val_score(alg, dtrain[predictors], dtrain['label'], cv=cv_folds
+                                                        ,scoring='accuracy')
 
         # Print model report:
         print("\nModel Report")
@@ -52,11 +60,15 @@ class GBM_MODEL:
         # Print Feature Importance:
         if printFeatureImportance:
             feat_imp = pd.Series(alg.feature_importances_, predictors)
-            feat_imp = feat_imp[feat_imp>0].sort_values(ascending=False)
+            feat_imp = feat_imp[feat_imp>0].sort_values(ascending=False)[:30]
             feat_imp.plot(kind='bar', title='Feature Importances')
             plt.ylabel('Feature Importance Score')
             plt.savefig("./FeatureImportance.png")
-            plt.show()
+            # plt.show()
+
+        with open(MODEL_FILENAME, 'wb') as f_pkl:
+            pickle.dump(alg, f_pkl)
+
 
 
     def train(self):
@@ -71,6 +83,39 @@ class GBM_MODEL:
         # https://www.jianshu.com/p/516f009c0875
         self.modelfit(gbm0, self.train_data, self.train_data, predictors)
 
+    def predict(self):
+        dp = Data_Preparation()
+        df_test = dp.test_data_process()
+
+        with open(MODEL_FILENAME, 'rb') as f_pkl:
+            gbm: GradientBoostingClassifier = pickle.load(f_pkl)
+
+        result = gbm.predict(df_test)
+        l_age = []
+        l_gender = []
+        for label in result:
+            age, gender = getAgeAndGenderFromLabelDict(label)
+            l_age.append(age)
+            l_gender.append(gender)
+
+        df_test['predicted_age'] = l_age
+        df_test['predicted_gender'] = l_gender
+        df_test_result = df_test[['user_id', 'predicted_age', 'predicted_gender']]
+        df_test_result[['predicted_age', 'predicted_gender']].groupby('user_id').agg(lambda x: np.mean(x.mode()[0])).reset_index()
+        df_test_result.to_csv('/submission/result.csv', sep=',', index=False)
+
+
+
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('action',
+                        help='train or predict')
+    args = parser.parse_args()
+
     gm = GBM_MODEL()
-    gm.train()
+    if args.action == "train":
+        gm.train()
+    elif args.action == "predict":
+        gm.predict()
+    else:
+        raise Exception("action wrong, train or predict")
