@@ -45,9 +45,6 @@ class Data_Preparation:
         self.label_dict = self.gen_label_dict()
         # self.df_train = self.data_process()
 
-        self.user_train_sample = pd.read_csv(USER_TRAIN_SAMPLE_CSV_PATH)
-        self.ad_train_sample = pd.read_csv(AD_TRAIN_SAMPLE_CSV_PATH)
-        self.click_log_train_sample = pd.read_csv(CLICK_LOG_TRAIN_SAMPLE_CSV_PATH)
 
         self.ad_test_sample = pd.read_csv(AD_TEST_SAMPLE_CSV_PATH)
         self.click_log_test_sample = pd.read_csv(CLICK_LOG_TEST_SAMPLE_CSV_PATH)
@@ -74,10 +71,17 @@ class Data_Preparation:
         df_train = self.user_train.join(self.click_log_train.set_index('user_id'), on='user_id', how='inner')
         df_train = df_train.join(self.ad_train.set_index('creative_id'), on='creative_id', how='inner')
 
+        del self.user_train
+        del self.click_log_train
+        del self.ad_train
+
         print("df_train before concat shape:\t", df_train.shape)
 
         df_test = self.ad_test_sample.merge(self.click_log_test_sample, left_on='creative_id', right_on='creative_id')
         print("df test before concat shape:\t", df_test.shape)
+
+        del self.ad_test_sample
+        del self.click_log_test_sample
 
         df_train = pd.concat([df_train, df_test], ignore_index=True)
         print("df all shape:\t", df_train.shape)
@@ -113,6 +117,13 @@ class Data_Preparation:
 
         # One-Hot Coding
         # df_train = pd.get_dummies(df_train, columns=var_to_encode)
+
+        del df_train
+        del df_test
+
+        self.user_train_sample = pd.read_csv(USER_TRAIN_SAMPLE_CSV_PATH)
+        self.ad_train_sample = pd.read_csv(AD_TRAIN_SAMPLE_CSV_PATH)
+        self.click_log_train_sample = pd.read_csv(CLICK_LOG_TRAIN_SAMPLE_CSV_PATH)
 
         # print(df_train.columns)
         df_train_sample = self.user_train_sample.join(self.click_log_train_sample.set_index('user_id'), on='user_id', how='inner')
