@@ -85,39 +85,46 @@ class Data_Preparation:
         df_test = self.ad_test_sample.merge(self.click_log_test_sample, left_on='creative_id', right_on='creative_id')
         print("df test before concat shape:\t", df_test.shape)
 
-        del df_test
         del self.ad_test_sample
         del self.click_log_test_sample
         gc.collect()
 
-        df_train_sample = pd.concat([df_train_sample, df_test], ignore_index=True)
-        print("df all shape:\t", df_train_sample.shape)
+        df_all = pd.concat([df_train_sample, df_test], ignore_index=True)
+        print("df all shape:\t", df_all.shape)
 
-        print(df_train_sample.head(5))
-        print(df_train_sample.dtypes)
+        del df_test
+        gc.collect()
+        print(df_all.head(5))
+        print(df_all.dtypes)
 
 
         # 合并age、 gender
-        print("生成label开始")
-        # df_train_sample['label'] = (df_train_sample['age'].map(str) + FIELD_SEP + df_train_sample['gender'].map(str)).map(self.label_dict.get)
-        df_train_sample['label'] = df_train_sample['age'].apply(str) + FIELD_SEP + df_train_sample['gender'].apply(str)
-        print("step 1")
-        df_train_sample.drop(['age', 'gender'], axis=1, inplace=True)
-        print("step2")
-        gc.collect()
-        print("step3")
-        df_train_sample['label'] = df_train_sample['label'].apply(self.label_dict.get)
-        print("生成label完成")
-
-        print("label:\t", df_train_sample['label'].values)
+        print("label encoder 生成完成")
         var_to_encode = ['product_id', 'industry']
         # Numerical Coding:
         le = LabelEncoder()
         # oe = OneHotEncoder(sparse=False)
         for col in var_to_encode:
-            df_train_sample[col] = le.fit_transform(df_train_sample[col])
+            df_all[col] = le.fit(df_all[col])
             # df_train_sample[col] = oe.fit(df_train_sample[col].unique().reshape(-1, 1))
-        print(df_train_sample.columns)
+            df_train_sample[col] = le.transform(df_train_sample[col])
+        print(df_all.columns)
+        print("label encoder 生成完成")
+
+        print("生成label开始")
+        # df_train_sample['label'] = (df_train_sample['age'].map(str) + FIELD_SEP + df_train_sample['gender'].map(str)).map(self.label_dict.get)
+        df_train_sample['label'] = df_train_sample['age'].apply(int).apply(str) + FIELD_SEP + df_train_sample['gender'].apply(int).apply(str)
+        print("label:\t", df_train_sample['label'].values)
+        print("step 1")
+        df_train_sample.drop(['age', 'gender'], axis=1, inplace=True)
+        print("label:\t", df_train_sample['label'].values)
+        print("step 2")
+        gc.collect()
+        print("step 3")
+        df_train_sample['label'] = df_train_sample['label'].map(self.label_dict.get)
+        print("生成label完成")
+
+        print("label:\t", df_train_sample['label'].values)
 
         df_train_sample = pd.get_dummies(df_train_sample, columns=var_to_encode)
 

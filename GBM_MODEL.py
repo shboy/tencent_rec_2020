@@ -19,13 +19,14 @@ import matplotlib.pylab as plt
 from matplotlib.pylab import rcParams
 
 from data_preparation import LABEL_ENCODER_FILENAME, Data_Preparation, getAgeAndGenderFromLabelDict
+import os
 
 rcParams['figure.figsize'] = 12, 4
 
 MODEL_FILENAME = "GBM/model/GBM.pb"
+SUBMISSION_DIR = 'submission'
 
-import os
-os.mkdir("submission")
+
 class GBM_MODEL:
     def __init__(self):
         # self.user_train = "train_preliminary/user.sample.csv"
@@ -33,10 +34,12 @@ class GBM_MODEL:
         # self.click_log_train = "train_preliminary/click_log.sample.csv"
         self.train_data = pd.read_csv("train_modified.csv")
         # self.test_data = pd.read_csv()
+        if not os.path.exists(SUBMISSION_DIR):
+            os.mkdir("submission")
 
-    def modelfit(self, alg, dtrain, dtest, predictors, performCV=True, printFeatureImportance=True, cv_folds=5):
+    def modelfit(self, alg, dtrain, predictors, target='label', performCV=True, printFeatureImportance=True, cv_folds=5):
         # Fit the algorithm on the data
-        alg.fit(dtrain[predictors], dtrain['label'])
+        alg.fit(dtrain[predictors], dtrain[target])
 
         # Predict training set:
         dtrain_predictions = alg.predict(dtrain[predictors])
@@ -44,16 +47,13 @@ class GBM_MODEL:
 
         # Perform cross-validation:
         if performCV:
-            cv_score = cross_validation.cross_val_score(alg, dtrain[predictors], dtrain['label'], cv=cv_folds
-                                                        ,scoring='accuracy')
+            cv_score = cross_validation.cross_val_score(alg, dtrain[predictors], dtrain[target], cv=cv_folds, scoring='accuracy')
 
         # Print model report:
         print("\nModel Report")
-
         print("Accuracy : %.4g" % metrics.accuracy_score(dtrain['label'].values, dtrain_predictions))
 
         # print("AUC Score (Train): %f" % metrics.roc_auc_score(dtrain['label'], dtrain_predprob))
-
 
         if performCV:
             print("CV Score : Mean - %.7g | Std - %.7g | Min - %.7g "
@@ -72,7 +72,6 @@ class GBM_MODEL:
             pickle.dump(alg, f_pkl)
 
 
-
     def train(self):
         target = 'label'
         IDcol = 'user_id'
@@ -83,7 +82,7 @@ class GBM_MODEL:
         # https://zhuanlan.zhihu.com/p/91652813?utm_source=wechat_session
         # https://www.2cto.com/kf/201802/717234.html
         # https://www.jianshu.com/p/516f009c0875
-        self.modelfit(gbm0, self.train_data, self.train_data, predictors)
+        self.modelfit(gbm0, self.train_data, predictors, target)
 
     def predict(self):
         dp = Data_Preparation()
@@ -93,6 +92,7 @@ class GBM_MODEL:
             gbm: GradientBoostingClassifier = pickle.load(f_pkl)
 
         result = gbm.predict(df_test)
+        print("result: ", result)
         l_age = []
         l_gender = []
         for label in result:
@@ -105,7 +105,6 @@ class GBM_MODEL:
         df_test_result = df_test[['user_id', 'predicted_age', 'predicted_gender']]
         df_test_result[['predicted_age', 'predicted_gender']].groupby('user_id').agg(lambda x: np.mean(x.mode()[0])).reset_index()
         df_test_result.to_csv('/submission/result.csv', sep=',', index=False)
-
 
 
 if __name__ == '__main__':
