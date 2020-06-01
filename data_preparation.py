@@ -45,13 +45,7 @@ class Data_Preparation:
         self.label_dict = self.gen_label_dict()
         # self.df_train = self.data_process()
 
-        self.user_train_sample = pd.read_csv(USER_TRAIN_SAMPLE_CSV_PATH)
-        self.ad_train_sample = pd.read_csv(AD_TRAIN_SAMPLE_CSV_PATH)
-        self.click_log_train_sample = pd.read_csv(CLICK_LOG_TRAIN_SAMPLE_CSV_PATH)
 
-
-        self.ad_test_sample = pd.read_csv(AD_TEST_SAMPLE_CSV_PATH)
-        self.click_log_test_sample = pd.read_csv(CLICK_LOG_TEST_SAMPLE_CSV_PATH)
 
     def gen_label_dict(self):
         label_dict = {}
@@ -72,6 +66,13 @@ class Data_Preparation:
         pass
 
     def data_process(self):
+        self.user_train_sample = pd.read_csv(USER_TRAIN_SAMPLE_CSV_PATH)
+        self.ad_train_sample = pd.read_csv(AD_TRAIN_SAMPLE_CSV_PATH)
+        self.click_log_train_sample = pd.read_csv(CLICK_LOG_TRAIN_SAMPLE_CSV_PATH)
+
+        self.ad_test_sample = pd.read_csv(AD_TEST_SAMPLE_CSV_PATH)
+        self.click_log_test_sample = pd.read_csv(CLICK_LOG_TEST_SAMPLE_CSV_PATH)
+
         df_train_sample = self.user_train_sample.join(self.click_log_train_sample.set_index('user_id'), on='user_id', how='inner')
         df_train_sample = df_train_sample.join(self.ad_train_sample.set_index('creative_id'), on='creative_id', how='inner')
 
@@ -148,7 +149,7 @@ class Data_Preparation:
         print("开始读取数据")
         df_ad_test = pd.read_csv(AD_TEST_SAMPLE_CSV_PATH)
         df_click_log_test = pd.read_csv(CLICK_LOG_TEST_SAMPLE_CSV_PATH)
-        df_test = df_click_log_test.merge(df_ad_test, left_on='creative_id',right_on='creative_id')
+        df_test = df_ad_test.merge(df_click_log_test, left_on='creative_id',right_on='creative_id')
         print("merge finished")
 
         var_to_encode = ['product_id', 'industry']
@@ -159,6 +160,7 @@ class Data_Preparation:
             # oe = pickle.load(f_oe_pkl)
         print("encoder 恢复完成")
         for col in var_to_encode:
+            print(col, "{} finished")
             df_test[col] = le.transform(df_test[col])
             # df_test[col] = oe.transform(df_test[col].values.reshape(-1, 1))
 
